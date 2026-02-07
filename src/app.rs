@@ -46,7 +46,7 @@ impl View {
 
     /// Get all views for tab iteration.
     pub fn all() -> &'static [View] {
-        &[View::Files, View::Branches, View::Commits, View::Stashes, View::Remotes, View::Worktrees]
+        &[View::Files, View::Branches, View::Commits, View::Stashes, View::Remotes, View::Worktrees, View::Workflows]
     }
 
     /// Switch to next view.
@@ -74,6 +74,7 @@ pub struct App {
     current_view: View,
     repo_view: RepoView,
     worktrees_view: WorktreesView,
+    workflow_view: WorkflowView,
 }
 
 impl App {
@@ -240,7 +241,7 @@ impl App {
     }
 
     /// Draw the UI for the current view.
-    fn draw_ui_static(f: &mut ratatui::Frame, current_view: View, repo: &Repository, repo_view: &RepoView, worktrees_view: &WorktreesView) -> Result<(), GitzError> {
+    fn draw_ui_static(f: &mut ratatui::Frame, current_view: View, repo: &Repository, repo_view: &RepoView, worktrees_view: &WorktreesView, workflow_view: &mut WorkflowView) -> Result<(), GitzError> {
         match current_view {
             View::Files => {
                 repo_view.draw(f, repo)?;

@@ -2,7 +2,7 @@ use crate::errors::GitzError;
 use crate::git::Repository;
 use crate::config::Config;
 use ratatui::Frame;
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::style::{Color, Style, Modifier};
 use ratatui::widgets::{Block, Borders, Paragraph, List, ListItem};
 use ratatui::text::Span;

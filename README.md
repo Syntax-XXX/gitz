@@ -1,6 +1,6 @@
-# gitz
+# git-z
 
-A blazingly fast terminal UI for Git, written in Rust. `gitz` aims to provide a smooth, interactive experience for managing Git repositories directly from the terminal.
+A blazingly fast terminal UI for Git, written in Rust. `git-z` aims to provide a smooth, interactive experience for managing Git repositories directly from the terminal.
 
 ## Features
 
@@ -42,7 +42,7 @@ gitz push
 
 ## Configuration
 
-`gitz` uses a configuration file (default: `~/.config/gitz/config.toml`). Example configuration:
+`git-z` uses a configuration file (default: `~/.config/gitz/config.toml`). Example configuration:
 
 ```toml
 [log]

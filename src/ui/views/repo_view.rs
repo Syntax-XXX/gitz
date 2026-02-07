@@ -35,16 +35,16 @@ impl RepoView {
 
     /// Handle a key press.
     pub fn handle_key(
-        &mut self, 
-        key: KeyEvent, 
-        repo: &Repository, 
+        &mut self,
+        key: KeyEvent,
+        _repo: &Repository,
         _cfg: &Config
     ) -> Result<bool, crate::errors::GitzError> {
         match key.code {
             crossterm::event::KeyCode::Char('s') => {
                 // Stage all changes.
-                crate::commands::add::stage_all(repo)?;
-                self.refresh(repo)?;
+                crate::commands::add::stage_all(_repo)?;
+                self.refresh(_repo)?;
                 self.status_message = "Staged all changes".to_string();
             }
             crossterm::event::KeyCode::Char('c') => {
@@ -52,14 +52,14 @@ impl RepoView {
                 if self.status.is_clean() {
                     self.status_message = "Nothing to commit".to_string();
                 } else {
-                    crate::commands::commit::commit(repo, "quick commit")?;
-                    self.refresh(repo)?;
+                    crate::commands::commit::commit(_repo, "quick commit")?;
+                    self.refresh(_repo)?;
                     self.status_message = "Committed changes".to_string();
                 }
             }
             crossterm::event::KeyCode::Char('r') | crossterm::event::KeyCode::F(5) => {
                 // Refresh manually
-                self.refresh(repo)?;
+                self.refresh(_repo)?;
             }
             crossterm::event::KeyCode::Char('q') => {
                 return Ok(true); // Signal to quit
@@ -95,12 +95,12 @@ impl RepoView {
 
     /// Draw the UI.
     pub fn draw(
-        &self, 
-        f: &mut ratatui::Frame, 
+        &self,
+        f: &mut ratatui::Frame,
         repo: &Repository
     ) -> Result<(), crate::errors::GitzError> {
         let size = f.area(); // Use area() instead of size()
-        
+
         // Layout: top bar, main area split, bottom status.
         let chunks = Layout::default()
             .direction(Direction::Vertical)
@@ -114,51 +114,36 @@ impl RepoView {
         // Top bar with repo path and branch.
         let branch_name = repo.current_branch()
             .unwrap_or_else(|_| "unknown".to_string());
-        
+
         let top_text = format!(
-            "gitz - Repository: {}   Branch: {}   Status: {}", 
-            repo.path().display(), 
+            "gitz - Repository: {}   Branch: {}   Status: {}",
+            repo.path().display(),
             branch_name,
             self.status.summary()
         );
-        
+
         let top_bar = Paragraph::new(top_text)
             .style(Style::default().fg(Color::Cyan))
             .block(Block::default()
                 .borders(Borders::ALL)
                 .title("⚡ gitz"));
-        
+
         f.render_widget(top_bar, chunks[0]);
 
         // Main area split into file list and diff placeholder.
         let main_chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Percentage(40), 
+                Constraint::Percentage(40),
                 Constraint::Percentage(60)
             ])
             .split(chunks[1]);
 
-        // File list on the left.
-        file_list::draw_file_list(f, main_chunks[0], &self.status);
+        // File list on the left with selection.
+        file_list::draw_file_list_with_selection(f, main_chunks[0], &self.status, Some(self.selected_file_index));
 
-        // Diff placeholder on the right.
-        let diff_block = Block::default()
-            .title("Diff Preview")
-            .borders(Borders::ALL)
-            .style(Style::default().fg(Color::White));
-        
-        let diff_content = if self.status.is_clean() {
-            Paragraph::new("No changes to display")
-                .style(Style::default().fg(Color::DarkGray))
-                .block(diff_block)
-        } else {
-            Paragraph::new("Select a file to view diff\n(Feature coming soon...)")
-                .style(Style::default().fg(Color::Yellow))
-                .block(diff_block)
-        };
-        
-        f.render_widget(diff_content, main_chunks[1]);
+        // Diff preview on the right.
+        self.draw_diff_preview(f, main_chunks[1], repo)?;
 
         // Bottom status bar with keybindings help.
         let help_text = format!(
@@ -167,6 +152,38 @@ impl RepoView {
         );
         status_bar::draw_status_bar(f, chunks[2], &help_text);
 
+        Ok(())
+    }
+
+    /// Draw the diff preview for the selected file.
+    fn draw_diff_preview(
+        &self,
+        f: &mut ratatui::Frame,
+        area: ratatui::layout::Rect,
+        _repo: &Repository,
+    ) -> Result<(), crate::errors::GitzError> {
+        let diff_block = Block::default()
+            .title("Diff Preview")
+            .borders(Borders::ALL)
+            .style(Style::default().fg(Color::White));
+
+        let diff_content = if self.status.is_clean() {
+            Paragraph::new("No changes to display")
+                .style(Style::default().fg(Color::DarkGray))
+                .block(diff_block)
+        } else if let Some(selected_file) = file_list::get_file_at_index(&self.status, self.selected_file_index) {
+            // TODO: Implement actual diff display with syntax highlighting
+            // For now, show a placeholder with the selected file name
+            Paragraph::new(format!("Diff for: {}\n\nFeature coming soon...\nUse 's' to stage, 'c' to commit", selected_file))
+                .style(Style::default().fg(Color::Yellow))
+                .block(diff_block)
+        } else {
+            Paragraph::new("Select a file to view diff")
+                .style(Style::default().fg(Color::DarkGray))
+                .block(diff_block)
+        };
+
+        f.render_widget(diff_content, area);
         Ok(())
     }
 }

@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use crate::errors::GitzError;
-use crate::git::{RepoStatus, CommitInfo};  // HINZUFÜGEN
+use crate::git::{RepoStatus, CommitInfo};
 use git2::{Repository as Git2Repo, StatusOptions, Oid};
 use std::path::PathBuf;
 
@@ -106,6 +106,31 @@ impl Repository {
             });
         }
         Ok(commits)
+    }
+
+    /// List all worktrees in the repository.
+    pub fn list_worktrees(&self) -> Result<Vec<String>, GitzError> {
+        let worktrees = self.inner.worktrees()?;
+        let mut names = Vec::new();
+        for name in worktrees.iter() {
+            if let Some(name) = name {
+                names.push(name.to_string());
+            }
+        }
+        Ok(names)
+    }
+
+    /// Create a new worktree at the given path for the specified branch.
+    pub fn create_worktree<P: AsRef<std::path::Path>>(&self, path: P, branch: &str) -> Result<(), GitzError> {
+        let branch_ref = self.inner.find_branch(branch, git2::BranchType::Local)?;
+        let _commit = branch_ref.get().peel_to_commit()?;
+        self.inner.worktree(branch, path.as_ref(), Some(&git2::WorktreeAddOptions::new()))?;
+        Ok(())
+    }
+
+    /// Switch to a worktree by opening the repository at the worktree path.
+    pub fn switch_to_worktree<P: AsRef<std::path::Path>>(path: P) -> Result<Self, GitzError> {
+        Self::open(path)
     }
 }
 

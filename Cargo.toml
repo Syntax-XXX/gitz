@@ -1,6 +1,6 @@
 [package]
 name = "gitpulse"
-version = "2.1.0"
+version = "2.2.0"
 edition = "2021"
 authors = ["Syntax-XXX <me@syntax-xxx.is-a.dev>"]
 license = "MIT"

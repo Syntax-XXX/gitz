@@ -41,6 +41,24 @@ async fn main() -> Result<(), anyhow::Error> {
     let cli = Cli::parse();
     let cfg = Config::load(cli.config.as_deref())?;
 
+    // Check if repo_path is current directory and if we have write permissions
+    if cli.repo_path == "." {
+        let current_dir = std::env::current_dir()?;
+        if !current_dir.join(".git").exists() {
+            // Try to create a test file to check write permissions
+            let test_file = current_dir.join(".gitz_test");
+            if std::fs::File::create(&test_file).is_err() {
+                eprintln!("Error: Cannot initialize git repository in current directory due to insufficient permissions.");
+                eprintln!("Please run gitz in a directory where you have write permissions, or specify a repository path:");
+                eprintln!("  gitz /path/to/repo");
+                std::process::exit(1);
+            } else {
+                // Clean up test file
+                let _ = std::fs::remove_file(test_file);
+            }
+        }
+    }
+
     let mut app = App::new(cli.repo_path, cfg).await?;
     app.run().await?;
     Ok(())
